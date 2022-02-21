@@ -19,11 +19,20 @@ else:
     def advde3_taskflow():
 
         def create_temp_file():
+            """
+            Создание временного файла
+            :return: название файла
+            """
             tmpfile = tempfile.NamedTemporaryFile(prefix='aws')
             tmpfile.close()
             return tmpfile.name
 
         def unzip_file(zf):
+            """
+            Распаковка архива во временный
+            :param zf: ZIP архив
+            :return:распакованный CSV файл
+            """
             if zipfile.is_zipfile(zf):
                 with zipfile.ZipFile(zf) as zip_file:
                     for member in zip_file.namelist():
@@ -47,6 +56,10 @@ else:
 
         @task
         def init_params():
+            """
+            Инициализация параметров доступа
+            :return:
+            """
             val = {'par1': Variable.get('aws_access_key_id')
                 , 'par2': Variable.get('aws_secret_access_key')
                 , 'par3': Variable.get('clickhouse_secret_url')}
@@ -58,6 +71,11 @@ else:
             requirements=['boto3'],
         )
         def receive_message(params0):
+            """
+            получение сообщения
+            :param params0: аутентификационныая инофрмация для подключения к SQS
+            :return: принятое сообщение
+            """
             import boto3
             import json
             import logging
@@ -94,6 +112,11 @@ else:
 
         @task(multiple_outputs=True)
         def get_file_name(message):
+            """
+            получение зазвания файла из сообщения
+            :param message: нотификация о создании файла от AWS S3
+            :return:
+            """
             import ast
             if len(message) == 0:
                 raise AirflowSkipException("task skipped: 'get_file_name'")
@@ -104,6 +127,11 @@ else:
 
         @task
         def download_file3(file):
+            """
+            Загрузка файла из AWS S3
+            :param file: название файла
+            :return: загруженный файл
+            """
             import boto3
             s3 = boto3.resource(service_name='s3',
                                 aws_access_key_id=Variable.get('aws_access_key_id')
@@ -117,6 +145,11 @@ else:
 
         @task
         def unzip_file0(file):
+            """
+            Распаковка загруженного файла
+            :param file: загруженный файл
+            :return: распакованный файл
+            """
             unzipped = unzip_file(file)
             if len(unzipped) == 0:
                 raise AirflowSkipException()
@@ -128,6 +161,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def load_data0(file):
+            """
+            загрузка данных БД
+            :param file: CSV файл
+            :return: результат загрузки
+            """
             def load_data(csv_file):
                 from clickhouse_driver import Client
                 import pandas as pd
@@ -171,6 +209,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def report1(skip_other):
+            """
+            Формирование отчета №1
+            :param skip_other: выполняем или пропускаем формирование отчета
+            :return: информация о файле отчета
+            """
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
@@ -206,6 +249,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def report2(skip_other):
+            """
+            Формирование отчета №2
+            :param skip_other: выполняем или пропускаем формирование отчета
+            :return: информация о файле отчета
+            """
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
@@ -252,11 +300,21 @@ else:
 
         @task
         def upload_rep1(repdata):
+            """
+            Загрузка файла отчета 1 в спецбакет
+            :param repdata: информация о файле
+            :return: None
+            """
             if not repdata['skip_other']:
                 upload_rep(repdata)
 
         @task
         def upload_rep2(repdata):
+            """
+            Загрузка файла отчета 2 в спецбакет
+            :param repdata: информация о файле
+            :return: None
+            """
             if not repdata['skip_other']:
                 upload_rep(repdata)
 
@@ -277,6 +335,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def load_data0_v2(file):
+            """
+            загрузка данных в БД (структура в альтернативном формате)
+            :param file: CSV файл
+            :return: результат загрузки
+            """
             def load_data(csv_file):
                 from clickhouse_driver import Client
                 import pandas as pd
@@ -321,6 +384,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def report1_v2(skip_other):
+            """
+            Формирование отчета №1 на втором варианте структуры данных
+            :param skip_other: выполняем или пропускаем формирование отчета
+            :return: информация о файле отчета
+            """
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
@@ -356,6 +424,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def report2_v2(skip_other):
+            """
+            Формирование отчета №2 на втором варианте структуры данных
+            :param skip_other: выполняем или пропускаем формирование отчета
+            :return: информация о файле отчета
+            """
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
@@ -392,6 +465,11 @@ else:
             requirements=['clickhouse_driver', 'pandas'],
         )
         def report3_v2(skip_other):
+            """
+            Формирование отчета №3 на втором варианте структуры данных
+            :param skip_other: выполняем или пропускаем формирование отчета
+            :return: информация о файле отчета
+            """
             from clickhouse_driver import Client
             import pandas as pd
             import random as rnd
@@ -420,20 +498,35 @@ else:
 
         @task
         def upload_rep1_v2(repdata):
+            """
+            Загрузка файла отчета 1 в спецбакет
+            :param repdata: информация о файле
+            :return: None
+            """
             if not repdata['skip_other']:
                 upload_rep(repdata)
 
         @task
         def upload_rep2_v2(repdata):
+            """
+            Загрузка файла отчета 2 в спецбакет
+            :param repdata: информация о файле
+            :return: None
+            """
             if not repdata['skip_other']:
                 upload_rep(repdata)
 
         @task
         def upload_rep3_v2(repdata):
+            """
+            Загрузка файла отчета 3 в спецбакет
+            :param repdata: информация о файле
+            :return: None
+            """
             if not repdata['skip_other']:
                 upload_rep(repdata)
 
-        # вторая ветка
+        # вторая ветка (обработка структуры данных с полем "gender")
         load_result = load_data0_v2(unzipped)
         rep_data1_v2 = report1_v2(load_result)
         upload_rep1_v2(rep_data1_v2)
